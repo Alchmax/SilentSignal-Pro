@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Asset Generator | SilentSignal PRO</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- GLOBAL RESET --- */
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+
+        /* --- UI CONTROLS (Hidden during print) --- */
+        .no-print-zone {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h1 { margin: 0 0 10px 0; font-weight: 800; font-size: 24px; }
+        p { color: #64748b; margin: 0 0 20px 0; font-size: 14px; }
+
+        .btn-print {
+            background-color: #38bdf8;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn-print:hover { background-color: #0ea5e9; }
+
+        /* --- QR GRID LAYOUT --- */
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* --- INDIVIDUAL STICKER DESIGN --- */
+        .sticker {
+            background-color: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+
+        .sticker-header {
+            display: flex;
+            align-items: center;
+            column-gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .shield-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #0f172a;
+            color: #38bdf8;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .brand-name {
+            font-weight: 800;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .room-label {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 10px 0;
+            color: #0f172a;
+        }
+
+        .qr-image {
+            width: 180px;
+            height: 180px;
+            margin: 10px 0;
+            border: 8px solid #f8fafc;
+            border-radius: 12px;
+        }
+
+        .instruction {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ef4444;
+            text-transform: uppercase;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- PRINT OVERRIDES --- */
+        @media print {
+            body { background-color: #ffffff; padding: 0; }
+            .no-print-zone { display: none; }
+            .qr-grid { display: block; }
+            .sticker {
+                width: 45%;
+                float: left;
+                margin: 2%;
+                border: 1px solid #000; /* Darker border for cutting guides */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print-zone">
+        <h1>Asset Generator</h1>
+        <p>This tool generates unique encrypted QR codes for every room. Print this page to create physical reporting stations.</p>
+        <button class="btn-print" onclick="window.print()">PRINT STICKER SHEET</button>
+    </div>
+
+    <div id="qrContainer" class="qr-grid">
+        </div>
+
+    <script>
+        /**
+         * 1. CONFIGURATION
+         * Replace the 'baseUrl' with your actual hosted project URL.
+         */
+        const baseUrl = "https://silentsignal-pro.firebaseapp.com/report.html";
+        
+        /**
+         * 2. ROOM DIRECTORY
+         * Add or remove rooms from this list. Use underscores for spaces.
+         */
+        const campusRooms = [
+            "Main_Entrance_Lobby",
+            "Science_Lab_A1",
+            "Science_Lab_A2",
+            "Library_Level_1",
+            "Library_Level_2",
+            "Cafeteria_West",
+            "Student_Union_Hall",
+            "Gymnasium_North",
+            "Computer_Center_101",
+            "Medical_Clinic",
+            "Admin_Office_305",
+            "Auditorium_Stage_Left"
+        ];
+
+        const container = document.getElementById('qrContainer');
+
+        /**
+         * 3. GENERATION ENGINE
+         */
+        campusRooms.forEach(roomID => {
+            // Construct the final destination URL
+            const destinationUrl = `${baseUrl}?room=${roomID}`;
+            
+            // Generate QR via QuickChart API (encoded for safety)
+            const qrSource = `https://quickchart.io/qr?text=${encodeURIComponent(destinationUrl)}&size=250&margin=1`;
+
+            // Create Sticker Element
+            const stickerDiv = document.createElement('div');
+            stickerDiv.className = 'sticker';
+
+            // Clean up Room Name for the label (e.g., "Science_Lab" becomes "Science Lab")
+            const cleanName = roomID.replace(/_/g, ' ');
+
+            stickerDiv.innerHTML = `
+                <div class="sticker-header">
+                    <div class="shield-icon">🛡️</div>
+                    <div class="brand-name">SilentSignal PRO</div>
+                </div>
+                <div class="room-label">${cleanName}</div>
+                <img src="${qrSource}" class="qr-image" alt="QR Code for ${cleanName}">
+                <div class="instruction">Emergency Only: Scan to Report</div>
+            `;
+
+            container.appendChild(stickerDiv);
+        });
+    </script>
+</body>
+</html>
